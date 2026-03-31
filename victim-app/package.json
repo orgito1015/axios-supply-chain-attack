@@ -1,0 +1,14 @@
+{
+  "name": "victim-app",
+  "version": "1.0.0",
+  "description": "A sample app that innocently installs fake-axios and gets compromised",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "fake-axios": "file:../fake-axios"
+  },
+  "license": "MIT",
+  "_demo_note": "Run `npm install` here to trigger the full attack chain. Make sure c2-server is running first."
+}
