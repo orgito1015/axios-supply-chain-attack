@@ -1,4 +1,4 @@
-# ⚠️ DISCLAIMER — READ BEFORE USING
+# DISCLAIMER - READ BEFORE USING
 
 This repository is a **fully sandboxed, educational reconstruction** of the Axios npm supply chain attack that occurred on March 31, 2026.
 

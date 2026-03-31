@@ -1,0 +1,10 @@
+{
+  "name": "axios-supply-chain-demo",
+  "version": "1.0.0",
+  "description": "Educational reconstruction of the Axios npm supply chain attack",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "license": "MIT"
+}
