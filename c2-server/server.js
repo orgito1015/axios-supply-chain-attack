@@ -99,7 +99,7 @@ function renderDashboard() {
 </head>
 <body>
   <div class="warning">
-    ⚠️ EDUCATIONAL DEMO ONLY — All traffic is localhost. No real C2. No real victims.
+    EDUCATIONAL DEMO ONLY - All traffic is localhost. No real C2. No real victims.
   </div>
   <h1>C2 Dashboard</h1>
   <p>Total beacons received: <span class="count">${beaconLog.length}</span></p>

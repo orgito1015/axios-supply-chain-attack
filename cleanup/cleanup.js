@@ -34,7 +34,7 @@ function dryOrRun(description, fn) {
   if (LIVE) {
     log(`EXECUTING: ${description}`);
     fn();
-    log(`  ✓ Done`);
+    log(`  Done`);
   } else {
     log(`[DRY RUN] Would execute: ${description}`);
   }
@@ -60,7 +60,7 @@ if (fs.existsSync(pkgJsonPath)) {
   log(`\n[BEFORE] package.json contents:`);
   log(JSON.stringify(current, null, 2));
   if (current.scripts?.postinstall) {
-    log(`\n  ⚠  Malicious postinstall hook detected: "${current.scripts.postinstall}"`);
+    log(`\n  WARNING: Malicious postinstall hook detected: "${current.scripts.postinstall}"`);
   }
 }
 

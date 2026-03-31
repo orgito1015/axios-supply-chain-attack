@@ -1,6 +1,6 @@
 # axios-supply-chain-demo
 
-> ⚠️ **Educational use only. Read [DISCLAIMER.md](./DISCLAIMER.md) before proceeding.**
+> WARNING: Educational use only. Read [DISCLAIMER.md](./DISCLAIMER.md) before proceeding.
 
 A fully sandboxed, end-to-end reconstruction of the Axios npm supply chain attack (March 31, 2026). This demo reproduces the complete attack chain — from poisoned package installation to cross-platform RAT deployment and forensic self-cleanup — entirely on localhost.
 
