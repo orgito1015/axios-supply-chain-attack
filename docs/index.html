@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axios Supply Chain Attack — Educational Demo</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:         #0d1117;
+      --surface:    #161b22;
+      --border:     #30363d;
+      --text:       #c9d1d9;
+      --muted:      #8b949e;
+      --accent:     #f85149;
+      --accent2:    #e3b341;
+      --accent3:    #3fb950;
+      --link:       #58a6ff;
+      --code-bg:    #1f2428;
+      --tag-red:    rgba(248,81,73,.15);
+      --tag-yellow: rgba(227,179,65,.15);
+      --tag-green:  rgba(63,185,80,.15);
+      --tag-blue:   rgba(88,166,255,.15);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1, h2, h3 { line-height: 1.3; }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,17,23,.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex; align-items: center; gap: 1.5rem;
+      height: 56px;
+    }
+    nav .brand {
+      font-weight: 700; font-size: 1rem; color: var(--accent);
+      white-space: nowrap; margin-right: auto;
+    }
+    nav a {
+      font-size: .875rem; color: var(--muted);
+      transition: color .15s;
+    }
+    nav a:hover { color: var(--text); text-decoration: none; }
+    .disclaimer-badge {
+      font-size: .75rem; font-weight: 600;
+      background: var(--tag-yellow); color: var(--accent2);
+      border: 1px solid var(--accent2);
+      border-radius: 20px; padding: .2rem .65rem;
+      white-space: nowrap;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 5rem 1.5rem 4rem;
+      text-align: center;
+      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(248,81,73,.12) 0%, transparent 70%);
+    }
+    .hero .eyebrow {
+      font-size: .8rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: .75rem; font-weight: 600;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800;
+      color: #fff; margin-bottom: 1.25rem;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 1.1rem; color: var(--muted);
+      max-width: 640px; margin: 0 auto 2rem;
+    }
+    .hero-stats {
+      display: flex; justify-content: center; gap: 2.5rem;
+      flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat .value { font-size: 1.75rem; font-weight: 700; color: var(--accent); }
+    .stat .label { font-size: .8rem; color: var(--muted); }
+
+    /* ── Disclaimer Banner ── */
+    .banner {
+      background: var(--tag-yellow);
+      border: 1px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      display: flex; gap: .75rem; align-items: flex-start;
+      margin: 2rem 0;
+      font-size: .9rem;
+    }
+    .banner .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .1rem; }
+    .banner strong { color: var(--accent2); }
+
+    /* ── Sections ── */
+    section { padding: 4rem 0; border-top: 1px solid var(--border); }
+    .section-label {
+      font-size: .75rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--accent); font-weight: 600; margin-bottom: .5rem;
+    }
+    section h2 {
+      font-size: 1.75rem; font-weight: 700; color: #fff;
+      margin-bottom: 1rem;
+    }
+    section .lead {
+      color: var(--muted); font-size: 1rem; margin-bottom: 2rem;
+      max-width: 680px;
+    }
+
+    /* ── Attack Flow Diagram ── */
+    .flow {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin: 1.5rem 0;
+    }
+    .flow-step {
+      display: flex; align-items: flex-start; gap: 1rem;
+      padding: .75rem 0;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .flow-step:last-child { border-bottom: none; }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem; height: 2rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700;
+      background: var(--tag-red); color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .step-body h3 { font-size: 1rem; color: #fff; margin-bottom: .3rem; }
+    .step-body p { font-size: .875rem; color: var(--muted); }
+
+    /* ── Code ── */
+    pre, code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: .875rem;
+    }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .1em .4em;
+      color: #e6edf3;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin: 1rem 0;
+    }
+    pre code {
+      background: none; border: none; padding: 0;
+    }
+
+    /* ── Tag Pills ── */
+    .tag {
+      display: inline-block;
+      font-size: .75rem; font-weight: 600; border-radius: 20px;
+      padding: .2rem .65rem; margin: .2rem;
+      border: 1px solid transparent;
+    }
+    .tag-red    { background: var(--tag-red);    color: var(--accent);  border-color: var(--accent); }
+    .tag-yellow { background: var(--tag-yellow); color: var(--accent2); border-color: var(--accent2); }
+    .tag-green  { background: var(--tag-green);  color: var(--accent3); border-color: var(--accent3); }
+    .tag-blue   { background: var(--tag-blue);   color: var(--link);    border-color: var(--link); }
+
+    /* ── Cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card-icon { font-size: 1.5rem; margin-bottom: .75rem; }
+    .card h3 { font-size: 1rem; color: #fff; margin-bottom: .4rem; }
+    .card p { font-size: .85rem; color: var(--muted); }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: .875rem;
+    }
+    thead th {
+      background: var(--surface);
+      color: var(--muted);
+      font-weight: 600; text-align: left;
+      padding: .65rem 1rem;
+      border-bottom: 2px solid var(--border);
+    }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    tbody td {
+      padding: .65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* ── Timeline ── */
+    .timeline { position: relative; padding-left: 2rem; margin: 1.5rem 0; }
+    .timeline::before {
+      content: "";
+      position: absolute; left: .45rem; top: 0; bottom: 0;
+      width: 2px; background: var(--border);
+    }
+    .tl-item {
+      position: relative; margin-bottom: 1.5rem;
+    }
+    .tl-dot {
+      position: absolute; left: -1.8rem; top: .4rem;
+      width: .7rem; height: .7rem;
+      border-radius: 50%; background: var(--accent);
+      border: 2px solid var(--bg);
+    }
+    .tl-item .time { font-size: .75rem; color: var(--muted); margin-bottom: .2rem; }
+    .tl-item h3 { font-size: .95rem; color: #fff; margin-bottom: .3rem; }
+    .tl-item p { font-size: .85rem; color: var(--muted); }
+
+    /* ── Platforms ── */
+    .platforms {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem; margin-top: 1.5rem;
+    }
+    .platform {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .platform .os { font-size: 1.4rem; margin-bottom: .5rem; }
+    .platform h3 { font-size: .95rem; color: #fff; margin-bottom: .6rem; }
+    .platform .ioc { font-size: .8rem; color: var(--muted); margin: .2rem 0; }
+    .platform .ioc code { font-size: .78rem; }
+
+    /* ── Controls grid ── */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem; margin-top: 1.5rem;
+    }
+    .control-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .control-card .c-icon { font-size: 1.25rem; margin-bottom: .5rem; }
+    .control-card h3 { font-size: .95rem; color: #fff; margin-bottom: .4rem; }
+    .control-card p { font-size: .82rem; color: var(--muted); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+    footer a { color: var(--link); }
+    footer .edu-note {
+      margin-bottom: .5rem;
+      display: inline-block;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      nav a:not(.brand) { display: none; }
+      .hero-stats { gap: 1.5rem; }
+      .stat .value { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <span class="brand">⚠️ axios-supply-chain-demo</span>
+  <a href="#what-happened">Overview</a>
+  <a href="#attack-flow">Attack Flow</a>
+  <a href="#detection">Detection</a>
+  <a href="#prevention">Prevention</a>
+  <span class="disclaimer-badge">Educational Only</span>
+</nav>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <div class="eyebrow">March 31, 2026 · npm Supply Chain Incident</div>
+  <h1>The <span>Axios</span> Supply<br>Chain Attack</h1>
+  <p>
+    An attacker compromised the primary Axios maintainer's npm credentials and
+    published malicious versions that silently installed a cross-platform Remote
+    Access Trojan on every developer who ran <code>npm install</code>.
+  </p>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="value">83M</div>
+      <div class="label">weekly downloads</div>
+    </div>
+    <div class="stat">
+      <div class="value">0</div>
+      <div class="label">Axios source lines changed</div>
+    </div>
+    <div class="stat">
+      <div class="value">39 min</div>
+      <div class="label">window before takedown</div>
+    </div>
+    <div class="stat">
+      <div class="value">3</div>
+      <div class="label">platforms targeted</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main content ── -->
+<div class="container">
+
+  <!-- Disclaimer -->
+  <div class="banner">
+    <span class="icon">⚠️</span>
+    <div>
+      <strong>Educational Purpose Only.</strong>
+      This page documents a sandboxed reconstruction of the real attack for
+      security research and developer awareness. No real C2 is involved.
+      All payloads are simulated and contain no destructive code.
+      <strong>Never deploy any component against real systems.</strong>
+    </div>
+  </div>
+
+  <!-- ── What Happened ── -->
+  <section id="what-happened">
+    <div class="section-label">Incident Summary</div>
+    <h2>What Happened</h2>
+    <p class="lead">
+      The attacker never touched a single line of Axios source code. Instead, they
+      injected a malicious package one level deeper in the dependency tree — invisible
+      to almost every standard security review.
+    </p>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="time">~18 hours before the attack</div>
+        <h3>🎭 Stage the Trojan Package</h3>
+        <p>
+          Attacker published <code>plain-crypto-js@4.2.0</code> — a completely clean
+          package — to establish registry history and avoid "new package" security alerts.
+        </p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="time">Prior to March 31, 2026</div>
+        <h3>🔑 Compromise Maintainer Account</h3>
+        <p>
+          A <strong>long-lived classic npm token</strong> for <code>jasonsaayman</code>
+          (primary Axios maintainer) was obtained. The registered email on the account
+          was changed to <code>ifstap@proton.me</code>, locking out the real maintainer.
+        </p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="time">March 30, 2026 · 23:59 UTC</div>
+        <h3>🐍 Publish Malicious Transitive Dep</h3>
+        <p>
+          <code>plain-crypto-js@4.2.1</code> published with a <code>postinstall</code>
+          hook pointing to <code>setup.js</code> — a cross-platform RAT dropper.
+          A clean <code>package.md</code> was bundled inside for the manifest-swap trick.
+        </p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="time">March 31, 2026 · 00:21–01:00 UTC</div>
+        <h3>☠️ Poison Axios</h3>
+        <p>
+          Using the stolen token, <code>axios@1.14.1</code> (00:21 UTC) and
+          <code>axios@0.30.4</code> (01:00 UTC) were published. Both added
+          <code>plain-crypto-js@4.2.1</code> as a runtime dependency.
+          Zero Axios source lines were modified.
+        </p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="time">Upon victim's <code>npm install</code></div>
+        <h3>💀 RAT Deployment & Cleanup</h3>
+        <p>
+          npm automatically executed the postinstall hook, dropping a platform-specific
+          RAT. After launch, the dropper overwrote <code>package.json</code> with the
+          clean manifest and deleted itself — leaving no forensic trace.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Attack Flow ── -->
+  <section id="attack-flow">
+    <div class="section-label">Technical Deep Dive</div>
+    <h2>Attack Flow</h2>
+    <p class="lead">
+      Eight phases (0–7) from credential theft to silent self-deletion.
+    </p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-num">0</div>
+        <div class="step-body">
+          <h3>Staging — Clean Package First</h3>
+          <p>
+            <code>plain-crypto-js@4.2.0</code> published clean to establish npm history.
+            Common technique to avoid new-package security scanner alerts.
+          </p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Account Compromise via Classic npm Token</h3>
+          <p>
+            Classic npm tokens don't expire and aren't scoped — a stolen token grants
+            full publish access to every package owned by that account forever.
+          </p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Payload Publication</h3>
+          <p>
+            <code>plain-crypto-js@4.2.1</code> adds <code>"postinstall": "node setup.js"</code>
+            to its <code>package.json</code>. The bundled <code>package.md</code> (a JSON
+            manifest intentionally disguised with a <code>.md</code> extension) is the
+            pre-staged clean manifest used in Step 7.
+          </p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Axios Poisoning (39-Minute Window)</h3>
+          <p>
+            Two poisoned Axios versions inject <code>plain-crypto-js</code> as a
+            runtime dep. <em>No Axios source was modified.</em> The rest of the
+            package was byte-for-byte identical to legitimate prior versions.
+          </p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Victim Installation — Automatic Hook Execution</h3>
+          <p>
+            <code>npm install axios</code> → npm resolves <code>plain-crypto-js</code>
+            as a transitive dep → <strong>postinstall fires automatically</strong> before
+            any developer code runs. No user interaction required.
+          </p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h3>OS Detection &amp; Payload Delivery</h3>
+          <p>
+            <code>setup.js</code> fingerprints the OS and POSTs to the C2 endpoint.
+            The server responds with the platform-appropriate second-stage payload.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Platform</th><th>C2 Endpoint</th><th>Delivery Method</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>🍎 macOS</td><td><code>/product0</code></td><td>AppleScript → C++ RAT binary</td></tr>
+                <tr><td>🪟 Windows</td><td><code>/product1</code></td><td>VBScript → PowerShell RAT</td></tr>
+                <tr><td>🐧 Linux</td><td><code>/product2</code></td><td>Python RAT (<code>/tmp/ld.py</code>)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h3>RAT Execution — Remote Access</h3>
+          <p>
+            RATs beacon every <strong>60 seconds</strong>. Supported C2 commands:
+            <code>run_payload</code>, <code>shell</code>, <code>ls</code>, <code>kill</code>.
+            No persistence — the RAT dies on reboot, suggesting rapid credential theft
+            was the primary goal.
+          </p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <h3>Forensic Self-Deletion</h3>
+          <p>
+            After launching the RAT, <code>setup.js</code> reads the pre-bundled
+            <code>package.md</code> (a valid JSON manifest disguised with a <code>.md</code>
+            extension to appear innocuous), overwrites <code>package.json</code> with it
+            (removing the postinstall hook), then <strong>deletes itself</strong>.
+            Post-infection inspection of <code>node_modules/plain-crypto-js</code>
+            shows a perfectly clean package.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Why hard to catch -->
+    <h3 style="color:#fff; margin: 2rem 0 .75rem;">Why This Attack Was Hard to Catch</h3>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🕵️</div>
+        <h3>Transitive Dependency</h3>
+        <p>Most developers only audit direct dependencies. <code>plain-crypto-js</code> was a dep-of-a-dep — invisible to grep-based auditing.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <h3>Never Imported</h3>
+        <p>No <code>require('plain-crypto-js')</code> anywhere in the Axios source. Pure postinstall side-effect — fully invisible to static analysis.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧹</div>
+        <h3>Self-Deletion</h3>
+        <p>The dropper removed all evidence after executing. Post-incident forensics on the node_modules folder found nothing suspicious.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔑</div>
+        <h3>Classic Token Abuse</h3>
+        <p>Long-lived classic npm tokens leave no OAuth trace and never expire. Once stolen, they grant permanent publish access.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Detection ── -->
+  <section id="detection">
+    <div class="section-label">Detection &amp; IOCs</div>
+    <h2>Indicators of Compromise</h2>
+    <p class="lead">
+      Check for these artifacts if you ran <code>npm install</code> during the window
+      <strong>March 31, 2026 00:21–01:00 UTC</strong>.
+    </p>
+
+    <!-- Affected versions -->
+    <h3 style="color:#fff; margin-bottom:.75rem;">Affected Package Versions</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Package</th><th>Malicious Version</th><th>Safe Version</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>axios</code></td>
+            <td><span class="tag tag-red">1.14.1</span></td>
+            <td><span class="tag tag-green">1.14.0 ✓</span></td>
+          </tr>
+          <tr>
+            <td><code>axios</code></td>
+            <td><span class="tag tag-red">0.30.4</span></td>
+            <td><span class="tag tag-green">0.30.3 ✓</span></td>
+          </tr>
+          <tr>
+            <td><code>plain-crypto-js</code></td>
+            <td><span class="tag tag-red">4.2.1</span></td>
+            <td><span class="tag tag-yellow">Do not use</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Platform IOCs -->
+    <h3 style="color:#fff; margin: 2rem 0 .75rem;">File System Artifacts by Platform</h3>
+    <div class="platforms">
+      <div class="platform">
+        <div class="os">🍎</div>
+        <h3>macOS</h3>
+        <div class="ioc"><code>/Library/Caches/com.apple.act.mond</code></div>
+        <div class="ioc" style="color:var(--muted);font-size:.75rem;">RAT binary disguised as Apple cache file</div>
+        <div class="ioc" style="margin-top:.5rem;"><code>/tmp/com.apple.setup.scpt</code></div>
+        <div class="ioc" style="color:var(--muted);font-size:.75rem;">AppleScript dropper (may already be deleted)</div>
+      </div>
+      <div class="platform">
+        <div class="os">🪟</div>
+        <h3>Windows</h3>
+        <div class="ioc"><code>%PROGRAMDATA%\wt.exe</code></div>
+        <div class="ioc" style="color:var(--muted);font-size:.75rem;">PowerShell RAT disguised as Windows Terminal</div>
+        <div class="ioc" style="margin-top:.5rem;"><code>%TEMP%\update_*.vbs</code></div>
+        <div class="ioc" style="color:var(--muted);font-size:.75rem;">VBScript dropper (transient)</div>
+      </div>
+      <div class="platform">
+        <div class="os">🐧</div>
+        <h3>Linux</h3>
+        <div class="ioc"><code>/tmp/ld.py</code></div>
+        <div class="ioc" style="color:var(--muted);font-size:.75rem;">Python RAT</div>
+      </div>
+    </div>
+
+    <!-- Network IOCs -->
+    <h3 style="color:#fff; margin: 2rem 0 .75rem;">Network IOCs</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Indicator</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>sfrclak.com</code></td><td><span class="tag tag-red">Domain</span></td><td>Primary C2 domain</td></tr>
+          <tr><td><code>sfrclak[.]com:8000</code></td><td><span class="tag tag-yellow">Host:Port</span></td><td>macOS binary delivery</td></tr>
+          <tr><td><code>packages.npm.org/product0</code></td><td><span class="tag tag-yellow">URL</span></td><td>macOS C2 endpoint (fake npm domain)</td></tr>
+          <tr><td><code>packages.npm.org/product1</code></td><td><span class="tag tag-yellow">URL</span></td><td>Windows C2 endpoint (fake npm domain)</td></tr>
+          <tr><td><code>packages.npm.org/product2</code></td><td><span class="tag tag-yellow">URL</span></td><td>Linux C2 endpoint (fake npm domain)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.85rem; color:var(--muted); margin-top:.5rem;">
+      ⚠️ <code>packages.npm.org</code> is the <em>attacker's</em> domain — NOT affiliated with npm.
+    </p>
+
+    <!-- npm Account IOCs -->
+    <h3 style="color:#fff; margin: 2rem 0 .75rem;">npm Account IOCs</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Indicator</th><th>Detail</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Compromised account</td><td><code>jasonsaayman</code></td></tr>
+          <tr><td>Attacker email</td><td><code>ifstap@proton.me</code></td></tr>
+          <tr><td>Malicious publisher</td><td><code>nrwise</code> (npm user)</td></tr>
+          <tr><td>Attacker email 2</td><td><code>nrwise@proton.me</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Detection steps -->
+    <h3 style="color:#fff; margin: 2rem 0 .75rem;">Quick Detection Checklist</h3>
+    <pre><code># 1 — Check Axios version
+npm list axios
+cat node_modules/axios/package.json | grep '"version"'
+# If you see 1.14.1 or 0.30.4 → AFFECTED
+
+# 2 — Check for plain-crypto-js
+ls node_modules/plain-crypto-js 2>/dev/null && echo "FOUND — investigate"
+
+# 3 — macOS: check for RAT binary
+ls -la /Library/Caches/com.apple.act.mond 2>/dev/null && echo "RAT FOUND"
+
+# 3 — Linux: check for Python RAT
+ls -la /tmp/ld.py 2>/dev/null && echo "RAT FOUND"
+
+# 4 — Check for C2 network connections
+lsof -i | grep sfrclak
+netstat -an | grep sfrclak
+
+# 5 — Block the C2 domain immediately
+echo "0.0.0.0 sfrclak.com" | sudo tee -a /etc/hosts</code></pre>
+
+    <!-- Remediation -->
+    <h3 style="color:#fff; margin: 2rem 0 .75rem;">Remediation Steps</h3>
+    <div class="banner" style="background:var(--tag-red); border-color:var(--accent);">
+      <span class="icon">🚨</span>
+      <div style="color:var(--text);">
+        <strong style="color:var(--accent);">If RAT artifacts are found: assume full compromise.</strong>
+        Rotate ALL secrets — npm tokens, cloud credentials, SSH keys, CI/CD secrets.
+        Review <code>~/.aws</code>, <code>~/.npmrc</code>, <code>~/.ssh</code> for unauthorized access.
+      </div>
+    </div>
+    <pre><code># Downgrade Axios
+npm install axios@1.14.0
+
+# Remove malicious dep
+rm -rf node_modules/plain-crypto-js
+
+# Regenerate lockfile
+npm install
+
+# If RAT found — rotate all secrets immediately</code></pre>
+  </section>
+
+  <!-- ── Prevention ── -->
+  <section id="prevention">
+    <div class="section-label">Preventive Controls</div>
+    <h2>How to Prevent This</h2>
+    <p class="lead">
+      Multiple controls at different layers would have caught or blocked this attack.
+    </p>
+
+    <div class="controls">
+      <div class="control-card">
+        <div class="c-icon">🔒</div>
+        <h3>Scoped &amp; Time-Limited npm Tokens</h3>
+        <p>Use granular tokens scoped to specific packages with short TTLs. Classic tokens never expire and aren't scoped.</p>
+      </div>
+      <div class="control-card">
+        <div class="c-icon">🔑</div>
+        <h3>TOTP / Passkey on npm Accounts</h3>
+        <p>Require MFA on publish. Even a stolen token can't be used without the second factor.</p>
+      </div>
+      <div class="control-card">
+        <div class="c-icon">🚫</div>
+        <h3>Disable postinstall Scripts</h3>
+        <p>Add <code>ignore-scripts=true</code> to <code>.npmrc</code> or use <code>npm install --ignore-scripts</code> in CI. Eliminates this entire attack class.</p>
+      </div>
+      <div class="control-card">
+        <div class="c-icon">📋</div>
+        <h3>Lockfile Pinning &amp; Diffs</h3>
+        <p>Review <code>package-lock.json</code> diffs in every PR. The addition of <code>plain-crypto-js</code> would have been immediately visible.</p>
+      </div>
+      <div class="control-card">
+        <div class="c-icon">🔍</div>
+        <h3>Socket / StepSecurity / Snyk</h3>
+        <p>Automated tools that flag postinstall scripts in new or modified transitive deps as high-risk — exactly what this attack used.</p>
+      </div>
+      <div class="control-card">
+        <div class="c-icon">✅</div>
+        <h3>npm Provenance Attestation</h3>
+        <p>Cryptographically verifies that a package was built by the expected GitHub Actions CI. The poisoned versions had no provenance.</p>
+      </div>
+      <div class="control-card">
+        <div class="c-icon">🌐</div>
+        <h3>Egress Firewall in CI/CD</h3>
+        <p>Block unexpected outbound connections during <code>npm install</code>. The dropper's POST to the C2 would have been blocked.</p>
+      </div>
+      <div class="control-card">
+        <div class="c-icon">🤖</div>
+        <h3>Renovate / Dependabot PRs</h3>
+        <p>Surfaces dependency changes as reviewable PRs before they hit production. Transitive dep additions become visible to the team.</p>
+      </div>
+    </div>
+
+    <h3 style="color:#fff; margin: 2rem 0 .75rem;">Recommended: Disable Scripts in CI</h3>
+    <pre><code># Add to your .npmrc
+ignore-scripts=true
+
+# Or per-install
+npm install --ignore-scripts</code></pre>
+    <p style="font-size:.85rem; color:var(--muted); margin-top:.5rem;">
+      Note: This may break packages that legitimately use postinstall (e.g. esbuild, node-sass).
+      Evaluate on a per-project basis.
+    </p>
+
+    <!-- Key concepts table -->
+    <h3 style="color:#fff; margin: 2rem 0 .75rem;">Key Technical Concepts in This Demo</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Concept</th><th>Where in this Repo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Transitive dependency injection</td><td><code>fake-axios/package.json</code></td></tr>
+          <tr><td>npm postinstall abuse</td><td><code>plain-crypto-js/package.json</code></td></tr>
+          <tr><td>Cross-platform OS detection</td><td><code>plain-crypto-js/setup.js</code></td></tr>
+          <tr><td>C2 beacon over HTTP POST</td><td><code>c2-server/server.js</code> + payloads</td></tr>
+          <tr><td>Forensic manifest swap</td><td><code>cleanup/cleanup.js</code></td></tr>
+          <tr><td>Self-deletion after execution</td><td><code>plain-crypto-js/setup.js</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div><!-- /container -->
+
+<!-- ── Footer ── -->
+<footer>
+  <p class="edu-note">
+    ⚠️ This is a <strong>fully sandboxed educational reconstruction</strong>.
+    No real C2. No real data exfiltration. For security research and awareness only.
+  </p>
+  <p>
+    Based on public analysis by
+    <a href="https://www.stepsecurity.io" target="_blank" rel="noopener">StepSecurity</a>,
+    <a href="https://safedep.io" target="_blank" rel="noopener">SafeDep</a>, and
+    <a href="https://socket.dev" target="_blank" rel="noopener">Socket</a>.
+    &nbsp;·&nbsp;
+    <a href="https://github.com/orgito1015/axios-supply-chain-attack" target="_blank" rel="noopener">View on GitHub</a>
+  </p>
+</footer>
+
+</body>
+</html>
